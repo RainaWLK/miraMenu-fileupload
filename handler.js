@@ -5,7 +5,7 @@ const SRC_PATH = "./build/";
 var app = require('./build/app.js');
 
 module.exports.hello = (event, context, callback) => {
-  console.log(event);
+  //console.log(event);
 
   app.onFileUploaded(event, context).then((msg) => {
 

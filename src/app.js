@@ -36,9 +36,8 @@ async function parseBinaryData(rawdata){
 
     let reqData = makeBinaryReqData(jsonData);
     if(reqData.type == 'image'){
-        console.log("qq");
         let imageInfo = await getImageInfo(reqData.body ,reqData.binaryBody);
-        console.log("parseBinaryData return");
+        //console.log("parseBinaryData return");
         reqData.body = imageInfo;
     }
     return reqData;
@@ -68,44 +67,4 @@ async function onFileUploaded(event, context){
 
 }
 
-/*
-function myTest(event, context) {
-    //console.log(event);
-    //console.log(context);
-    //console.log(event.Records[0].requestParameters);
-    // Get the object from the event and show its content type
-    const bucket = event.Records[0].s3.bucket.name;
-    console.log("bucket="+bucket);
-    const key = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, ' '));
-    console.log("key="+key);
-    const params = {
-        Bucket: bucket,
-        Key: key,
-    };
-    s3.getObject(params, (err, data) => {
-        if (err) {
-            console.log(err);
-            const message = `Error getting object ${key} from bucket ${bucket}. Make sure they exist and your bucket is in the same region as this function.`;
-            console.log(message);
-            callback(message);
-        } else {
-            console.log('CONTENT TYPE:', data.ContentType);
-            console.log(data);
-            //console.log(data.Body.toString());
-
-            let body = JSON.parse(data.Body);
-
-            //for debug
-            body["body"].image = "jumi";
-
-            console.log(JSON.stringify(body));
-
-
-            //callback(null, data.ContentType);
-        }
-    });
-
-}*/
-
-//exports.myTest = myTest;
 exports.onFileUploaded = onFileUploaded;

@@ -7,6 +7,7 @@ import { makeInfo } from './image.js';
 
 const TABLE_NAME = "Restaurants";
 const CONTROL_TABLE_NAME = "Control";
+const S3BUCKET = "jumi-upload";
 
 function RestaurantControl() {
     //contructor() {
@@ -19,6 +20,8 @@ function RestaurantControl() {
 class Restaurant {
     constructor(reqData){
         this.reqData = reqData;
+
+        this.s3 = new S3("us-east-1", S3BUCKET);
     }
 
     getNewPictureID(controlData){
@@ -31,7 +34,7 @@ class Restaurant {
         return maxID.toString();
     }
 	
-    async getPicture() {
+    /*async getPicture() {
         try {
             let restaurant_id = this.reqData.params.restaurant_id;
             let restaurantData = await db.queryById(TABLE_NAME, restaurant_id);
@@ -39,7 +42,7 @@ class Restaurant {
 	        let path = "restaurants/"+restaurant_id+"/pictures";
 	        let file_name = this.reqData.params.picture_id + ".jpg";
 			console.log(file_name);
-            let data = await S3.getS3Obj(path + "/" + file_name);
+            let data = await this.s3.getS3Obj(path + "/" + file_name);
             return data;
         }catch(err) {
             throw err;
@@ -57,7 +60,7 @@ class Restaurant {
         }catch(err) {
             throw err;
         }
-    }
+    }*/
 	
     async addPicture(payload, binaryData) {
         try {
@@ -68,7 +71,8 @@ class Restaurant {
             let picture_id = this.getNewPictureID(restaurantData.restaurantControl);
 	        let file_name = picture_id+".jpg";
 
-            let msg = await S3.uploadToS3(path + "/" + file_name, binaryData);
+            
+            let msg = await this.s3.uploadToS3(path + "/" + file_name, binaryData);
 		
             //update db
             if(typeof restaurantData.photos == 'undefined'){
@@ -82,33 +86,6 @@ class Restaurant {
             return msg;
         }catch(err) {
             console.log(err);
-            throw err;
-        }
-    }
-
-    async deletePicture() {
-        try {
-            let restaurant_id = this.reqData.params.restaurant_id;
-            let restaurantData = await db.queryById(TABLE_NAME, restaurant_id);
-
-	        let path = "restaurants/"+restaurant_id+"/pictures";
-
-		    let picture_id = this.reqData.params.picture_id;
-            let file_name = picture_id + ".jpg";
-            if(typeof restaurantData.photos[picture_id] == 'undefined'){
-                console.log("not found");
-                throw null;
-            }
-
-            let msg = await S3.deleteS3Obj(path + "/" + file_name);
-
-             //update db
-            delete restaurantData.photos[picture_id];
-        
-            console.log(restaurantData);
-            let msg2 = await db.put(TABLE_NAME, restaurantData);           
-            return msg;
-        }catch(err) {
             throw err;
         }
     }

@@ -26,11 +26,10 @@ function getImageInfo(userInfo, binaryData){
     return new Promise((resolve, reject) => {
         im(binaryData).identify((err, data) => {
             if(err){
-console.log(err);
                 reject(err);
                 return;
             }
-console.log(data);
+            //console.log(data);
             let mimetype = mime.contentType(data.format);
             imageInfo.mimeType = mimetype;
             imageInfo.size = data.size; //width, height
