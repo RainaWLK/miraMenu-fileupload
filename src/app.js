@@ -43,6 +43,23 @@ async function parseBinaryData(rawdata){
     return reqData;
 }
 
+async function route(req){
+    let result;
+    let cmdObj;
+
+    switch(req.paths){
+        case '/restaurants/{restaurant_id}/pictures':
+            cmdObj = new Restaurant(req);
+            result = await cmdObj.addPicture(req.body, req.binaryBody);
+            break;
+        case '/restaurants/{restaurant_id}/branches/{branch_id}/pictures':
+            cmdObj = new Branch(req);
+            result = await cmdObj.addPicture(req.body, req.binaryBody);
+            break;
+    }
+    return result;
+}
+
 async function onFileUploaded(event, context){
     const bucket = event.Records[0].s3.bucket.name;
     const filename = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, ' '));
@@ -53,8 +70,7 @@ async function onFileUploaded(event, context){
         let rawdata = await s3.getS3Obj(filename);
 
         let req = await parseBinaryData(rawdata);
-        let cmdObj = new Restaurant(req);
-        return await cmdObj.addPicture(req.body, req.binaryBody);
+        return route(req);
 
     }
     catch(err){

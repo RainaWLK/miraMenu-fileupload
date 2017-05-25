@@ -25,10 +25,10 @@ class Restaurant {
     }
 
     getNewPictureID(controlData){
-	//migration
-	if(typeof controlData.pictureMaxID == 'undefined'){
-		controlData.pictureMaxID = "0";
-	}
+        //migration
+        if(typeof controlData.pictureMaxID == 'undefined'){
+            controlData.pictureMaxID = "0";
+        }
 		
         let maxID = parseInt(controlData.pictureMaxID, 10) + 1;
         return maxID.toString();
