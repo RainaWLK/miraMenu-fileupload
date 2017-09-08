@@ -1,94 +1,65 @@
 let db = require('./dynamodb.js');
-//let JSONAPI = require('./jsonapi.js');
-import Control from './control.js';
-import { cloneDeep } from 'lodash';
-import S3 from './s3';
-import { makeInfo } from './image.js';
+let _ = require('lodash');
+let utils = require('./utils');
+//let S3 = require('./s3');
+//import { makeInfo } from './image.js';
+let dynamolock = require('./dynamolock');
 
+const PHOTO_TMP_TABLE_NAME = "photo_tmp";
 const TABLE_NAME = "Branches";
-const RESTAURANT_TABLE_NAME = "Restaurants";
-const S3BUCKET = "jumi-upload";
 
-function BranchControl() {
-    //contructor() {
-        //this.branchesMaxID = "0";
-        //this.branch_ids = [];
-        this.restaurant_id = "0";
-        this.branch_id = "0";
-        this.tablesMaxID = "t001";
-        this.menusMaxID = "m001";
-        this.itemsMaxID = "i001";
-        //this.table_ids = [];
-    //}
-}
 
-class Branches {
+class Branch {
     constructor(reqData){
         this.reqData = reqData;
-    }
+        //this.s3 = new S3(reqData.region, reqData.bucket);
+        //this.idArray = utils.parseID(reqData.parent_fullid);
+        //console.log(this.idArray);
 
-    getNewID(restaurantData) {
-        console.log('==getNewID==');
-        console.log(restaurantData);
-        let maxID = parseInt(restaurantData.restaurantControl.branchesMaxID, 16) + 1;
-        console.log(maxID);
-        return maxID.toString();
-    }
+        //this.branch_id = `r${this.idArray.r}s${this.idArray.s}`;
 
-    getNewPictureID(controlData){
-        //migration
-        if(typeof controlData.pictureMaxID == 'undefined'){
-            controlData.pictureMaxID = "0";
-        }
-		
-        let maxID = parseInt(controlData.pictureMaxID, 10) + 1;
-        return maxID.toString();
+        this.branch_id = reqData.parent_fullid;
+        this.tmpdb_id = reqData.parent_fullid+reqData.resourceid;
     }
-
-    async getByID() {
+	
+    async addPicture() {
         try {
-            let id = this.reqData.params.restaurant_id+this.reqData.params.branch_id;
-            let data = await db.queryById(TABLE_NAME, id);
-            delete data.branchControl;
-            //table
-            let tableArray = [];
-            for(let table_id in data.tables){
-                tableArray.push(table_id);
-            }
-            data.tables = tableArray;
+            let uploadData = await db.queryById(PHOTO_TMP_TABLE_NAME, this.tmpdb_id);
+            console.log(uploadData);
+            let tmpid = uploadData.id;
 
-            let output = JSONAPI.makeJSONAPI(this.reqData.paths[3], data);
-            return output;
-        }catch(err) {
-            throw err;
-        }
-    }
+            let branchData = await db.queryById(TABLE_NAME, this.branch_id);
+            console.log(branchData);
 
-    async addPicture(payload, binaryData) {
-        try {
-            let restaurant_id = this.reqData.params.restaurant_id;
-            let branch_id = this.reqData.params.branch_id;
-            let id = restaurant_id+branch_id;
-            let branchData = await db.queryById(TABLE_NAME, id);
-
-	        let path = "restaurants/"+restaurant_id+"/branches/"+branch_id+"/pictures";
-			
-            let picture_id = this.getNewPictureID(branchData.branchControl);
-	        let file_name = picture_id+".jpg";
-
-            
-            let msg = await this.s3.uploadToS3(path + "/" + file_name, binaryData);
-		
-            //update db
+            //menu
             if(typeof branchData.photos == 'undefined'){
-                branchData.photos = {}; //filename: desc
+                branchData.photos = {};
             }
-            branchData.photos[picture_id] = payload;
-            branchData.branchControl.pictureMaxID = picture_id;
-        
+            console.log(branchData);
+
+            //insert into db
+            uploadData.url = {
+                'origin': `https://${this.reqData.bucket}.s3.amazonaws.com/`+this.reqData.path
+            }
+            delete uploadData.ttl;
+            delete uploadData.id;
+
+            let photo_id = this.reqData.resourceid;
+            branchData.photos[photo_id] = uploadData;
+            console.log("new data array=");
+            console.log(branchData);
+
             let msg2 = await db.put(TABLE_NAME, branchData);
-            //console.log(msg);
-            return msg;
+
+            //clear
+            let clearData = {
+                "id": tmpid
+            }
+            console.log(clearData);
+            let delMsg = await db.delete(PHOTO_TMP_TABLE_NAME, clearData);
+            console.log(delMsg);
+            
+            return msg2;
         }catch(err) {
             console.log(err);
             throw err;
@@ -96,5 +67,4 @@ class Branches {
     }
 }
 
-
-export default Branches;
+export default Branch;

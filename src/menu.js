@@ -6,19 +6,22 @@ let utils = require('./utils');
 let dynamolock = require('./dynamolock');
 
 const PHOTO_TMP_TABLE_NAME = "photo_tmp";
-const TABLE_NAME = "Restaurants";
+const MENUS_TABLE_NAME = "Menus";
 
 
-class Restaurant {
+class Menu {
     constructor(reqData){
         this.reqData = reqData;
         //this.s3 = new S3(reqData.region, reqData.bucket);
-        //this.idArray = utils.parseID(reqData.parent_fullid);
-        //console.log(this.idArray);
+        this.idArray = utils.parseID(reqData.parent_fullid);
+        console.log(this.idArray);
 
-        //this.restaurant_id = `r${this.idArray.r}`;
-
-        this.restaurant_id = reqData.parent_fullid;
+        this.branchid = `r${this.idArray.r}`;
+        if(typeof this.idArray.s != 'undefined'){
+            this.branchid += `s${this.idArray.s}`;
+        }
+        //this.menu_fullID = this.branchid + `m${this.idArray.m}`;
+        this.menu_fullID = reqData.parent_fullid;
         this.tmpdb_id = reqData.parent_fullid+reqData.resourceid;
     }
 	
@@ -28,14 +31,18 @@ class Restaurant {
             console.log(uploadData);
             let tmpid = uploadData.id;
 
-            let restaurantData = await db.queryById(TABLE_NAME, this.restaurant_id);
-            console.log(restaurantData);
+            //db lock
+            await dynamolock.getLock();
+            let menusData = await db.queryById(MENUS_TABLE_NAME, this.branchid);
+            console.log(menusData);
 
             //menu
-            if(typeof restaurantData.photos == 'undefined'){
-                restaurantData.photos = {};
+            //let menuID = `m${this.idArray.m}`;
+            let menuData = menusData.menus[this.menu_fullID];
+            if(typeof menuData.photos == 'undefined'){
+                menuData.photos = {};
             }
-            console.log(restaurantData);
+            console.log(menuData);
 
             //insert into db
             uploadData.url = {
@@ -45,11 +52,11 @@ class Restaurant {
             delete uploadData.id;
 
             let photo_id = this.reqData.resourceid;
-            restaurantData.photos[photo_id] = uploadData;
+            menuData.photos[photo_id] = uploadData;
             console.log("new data array=");
-            console.log(restaurantData);
+            console.log(menusData);
 
-            let msg2 = await db.put(TABLE_NAME, restaurantData);
+            let msg2 = await db.put(MENUS_TABLE_NAME, menusData);
 
             //clear
             let clearData = {
@@ -67,4 +74,4 @@ class Restaurant {
     }
 }
 
-export default Restaurant;
+export default Menu;
