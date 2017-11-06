@@ -4,9 +4,11 @@
   "description": "my S3 Uploader",
   "main": "handler.js",
   "scripts": {
-    "transpile": "babel src -d build",
+    "transpile": "babel src -d build && cp -R src/aws-lambda-image/bin build/aws-lambda-image/",
     "test": "mocha --compilers js:babel-core/register --require babel-polyfill --timeout 15000",
-    "deploy": "npm run transpile && SLS_DEBUG=* serverless deploy -v",
+    "create": "npm run transpile && SLS_DEBUG=* serverless deploy -v",
+    "deploy": "npm run transpile && SLS_DEBUG=* serverless deploy function -s dev -f uploadService-dev -v",
+    "release": "npm run transpile && SLS_DEBUG=* serverless deploy function -s prod -f uploadService  -v",
     "package": "npm run transpile && serverless package",
     "help": "serverless --help",
     "destroy": "serverless remove",
@@ -30,8 +32,12 @@
     "babel-polyfill": "^6.23.0",
     "dynamo-lock": "^0.1.3",
     "gm": "^1.23.0",
+    "image-type": "^3.0.0",
+    "imagemin": "^5.3.1",
+    "imagemin-mozjpeg": "^6.0.0",
     "lodash": "^4.17.4",
     "mime-types": "^2.1.15",
+    "path-template": "0.0.0",
     "sprintf-js": "^1.1.0"
   }
 }

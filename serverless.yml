@@ -25,9 +25,10 @@ provider:
   name: aws
   runtime: nodejs6.10
 # you can overwrite defaults here
-  stage: dev
+  stage: prod
   region: us-east-1
-  versionFunctions: false # optional, default is true
+  versionFunctions: true # optional, default is true
+  timeout: 15
 # you can add statements to the Lambda function's IAM Role here
   iamRoleStatements:
     - Effect: "Allow"
@@ -88,15 +89,32 @@ package:
     - node_modules/aws-sdk
   include:
     - handler.js
+  excludeDevDependencies: true # Config if Serverless should automatically exclude dev dependencies in the deployment package. Defaults to true
+
+custom:
+  bucket: meshphoto
+  dev-bucket: meshphoto-dev
 
 functions:
   uploadService:
     handler: handler.main
-    name: ${self:provider.stage}-uploader
+    name: prod-uploader
     description: upload process function
     events:
       - s3:
-          bucket: meshphoto
+          bucket: ${self:custom.bucket}-tmp
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: ""
+            - suffix: ""
+
+  uploadService-dev:
+    handler: handler.main
+    name: dev-uploader
+    description: upload process function
+    events:
+      - s3:
+          bucket: ${self:custom.dev-bucket}-tmp
           event: s3:ObjectCreated:*
           rules:
             - prefix: ""
@@ -134,10 +152,14 @@ functions:
 # you can add CloudFormation resource templates here
 #resources:
 #  Resources:
-#    NewResource:
+#    UploadBucket:
 #      Type: AWS::S3::Bucket
 #      Properties:
-#        BucketName: my-new-bucket
+#        BucketName: ${self:custom.bucket}
+#    UploadBucketDev:
+#      Type: AWS::S3::Bucket
+#      Properties:
+#        BucketName: ${self:custom.dev-bucket}
 #  Outputs:
 #     NewOutput:
 #       Description: "Description for the output"

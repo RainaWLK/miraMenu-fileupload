@@ -4,8 +4,9 @@ require("babel-polyfill");
 const SRC_PATH = "./build/";
 var app = require('./build/app.js');
 
-module.exports.hello = (event, context, callback) => {
-  //console.log(event);
+module.exports.main = (event, context, callback) => {
+  console.log(event);
+  console.log(context);
 
   app.onFileUploaded(event, context).then((msg) => {
 

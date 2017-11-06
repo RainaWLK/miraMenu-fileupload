@@ -1,8 +1,10 @@
 let S3 = require('./s3');
 //import { getImageInfo } from './image.js';
 let db = require('./dynamodb');
+let env = require('./env.js').env;
 let utils = require('./utils');
 let _ = require('lodash');
+//let ImageProcessor = require('./aws-lambda-image/index.js');
 
 import Restaurant from './restaurant.js';
 import Branch from './branch.js';
@@ -12,7 +14,7 @@ import Item from './item.js';
 
 async function route(req){
     let cmdObj;
-    console.log(req);
+
     switch(req.category){
         case 'restaurants':
             cmdObj = new Restaurant(req);
@@ -37,9 +39,9 @@ async function route(req){
         case 'photos':
             result = await cmdObj.addPicture();
             break;
-        case 'resources':
-            result = await cmdObj.addResource();
-            break;
+        //case 'resources':
+        //    result = await cmdObj.addResource();
+        //    break;
     }
 
     return result;
@@ -78,9 +80,13 @@ function parsePath(path){
 
 
 async function onFileUploaded(event, context){
+    //if(event.Records[0].userIdentity.principalId.indexOf('AWS:') === 0){
+    //    return;
+    //}
+
     let pathStr = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, ' '));
     let pathObj = parsePath(pathStr);
-    console.log(pathObj);
+    pathStr = pathStr.substr(0, pathStr.length-pathObj.filename.length); 
 
     const fileinfo = {
         region: event.Records[0].awsRegion,
@@ -96,11 +102,12 @@ async function onFileUploaded(event, context){
 
         //sequencer: event.Records[0].s3.object.sequencer
     }
-    //console.log(event.Records[0]);
     console.log(fileinfo);
-    //let s3 = new S3(event.Records[0].awsRegion, fileinfo.bucket);
+    env.init(fileinfo);
 
     try {
+        //await ImageProcessor.process(event.Records[0].s3);
+
         let result = await route(fileinfo);
         console.log(result);
         return result;

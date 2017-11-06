@@ -27,16 +27,17 @@ class S3 {
 		}
 	}
 
-	async uploadToS3(filename, buf){
+	async uploadToS3(buf, filename, contentType){
 		var params = {
 			Bucket: this.bucket,
 			ACL: "public-read",
 			Key: filename,
+			ContentType: contentType,
 			Body: buf
 		};
 
 		try {
-			let data = await this.s3.upload(params).promise();
+			let data = await this.s3.putObject(params).promise();
 			console.log("Upload successed: " + data.Location);
 			return data;
 		}
@@ -65,4 +66,4 @@ class S3 {
 
 }
 
-export default S3;
+exports.S3 = S3;
