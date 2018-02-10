@@ -4,7 +4,7 @@ options = {
     awsConfig:{
 //        "accessKeyId": "akid",
 //        "secretAccessKey": "secret",
-        "region": "us-east-1"
+        "region": "us-west-2"
     }
 };
 const lockTableName = 'Lock';

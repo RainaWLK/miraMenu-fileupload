@@ -87,7 +87,7 @@ async function runAwsLambdaImage(buffer, fileinfo){
       "public-read"
     );
 
-    const fileSystem = new S3FileSystem('us-east-1');
+    const fileSystem = new S3FileSystem('us-west-2');
     const processor  = new ImageProcessor(fileSystem, {});
     const config     = new Config(myconfig);
     

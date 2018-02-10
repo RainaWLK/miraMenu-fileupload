@@ -23,7 +23,7 @@ class Restaurant {
     constructor(reqData){
         this.reqData = reqData;
 
-        this.s3 = new S3("us-east-1", S3BUCKET);
+        this.s3 = new S3("us-west-2", S3BUCKET);
     }
 
     getNewPictureID(controlData){

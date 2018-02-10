@@ -64,7 +64,7 @@ async function onFileUploaded(event, context){
     const bucket = event.Records[0].s3.bucket.name;
     const filename = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, ' '));
 
-    let s3 = new S3("us-east-1", bucket);
+    let s3 = new S3("us-west-2", bucket);
 
     try {
         let rawdata = await s3.getS3Obj(filename);

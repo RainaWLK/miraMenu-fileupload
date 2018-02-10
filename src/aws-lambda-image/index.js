@@ -61,7 +61,7 @@ function process(s3Object, callback) {
 
 function process(s3Object){
   const configPath = path.resolve(__dirname, "config.json");
-  const fileSystem = new S3FileSystem('us-east-1');
+  const fileSystem = new S3FileSystem('us-west-2');
   const processor  = new ImageProcessor(fileSystem, s3Object);
   const config     = new Config(
       JSON.parse(fs.readFileSync(configPath, { encoding: "utf8" }))

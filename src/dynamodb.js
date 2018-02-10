@@ -1,6 +1,6 @@
 let AWS = require('aws-sdk');
 AWS.config.update({
-    region: "us-east-1"
+    region: "us-west-2"
 });
 //if (typeof Promise === 'undefined') {
 //  AWS.config.setPromisesDependency(require('bluebird'));

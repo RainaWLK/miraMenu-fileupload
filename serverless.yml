@@ -26,7 +26,7 @@ provider:
   runtime: nodejs6.10
 # you can overwrite defaults here
   stage: prod
-  region: us-east-1
+  region: us-west-2
   versionFunctions: true # optional, default is true
   timeout: 15
 # you can add statements to the Lambda function's IAM Role here
@@ -57,15 +57,23 @@ provider:
         - "dynamodb:Query"
       Resource:
         Fn::Join:
-          - ""
-          - - "arn:aws:dynamodb:us-east-1:552950262288:table/*"
+          - ''
+          - - 'arn:aws:dynamodb:'
+            - Ref: 'AWS::Region'
+            - ':'
+            - '780139254791'
+            - ':table/*'
     - Effect: "Allow"
       Action:
         - "dynamodb:DeleteItem"
       Resource:
         Fn::Join:
-          - ""
-          - - "arn:aws:dynamodb:us-east-1:552950262288:table/photo_tmp"
+          - ''
+          - - 'arn:aws:dynamodb:'
+            - Ref: 'AWS::Region'
+            - ':'
+            - '780139254791'
+            - ':table/photo_tmp'
 
 #    - Effect: "Allow"
 #      Action:
@@ -150,17 +158,125 @@ functions:
 #      variable2: value2
 
 # you can add CloudFormation resource templates here
-#resources:
-#  Resources:
-#    UploadBucket:
-#      Type: AWS::S3::Bucket
-#      Properties:
-#        BucketName: ${self:custom.bucket}
-#    UploadBucketDev:
-#      Type: AWS::S3::Bucket
-#      Properties:
-#        BucketName: ${self:custom.dev-bucket}
-#  Outputs:
-#     NewOutput:
-#       Description: "Description for the output"
-#       Value: "Some output value"
+resources:
+  Resources:
+    UploadBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.bucket}
+        AccessControl: PublicRead
+        CorsConfiguration:
+          CorsRules:
+          - AllowedHeaders:
+            - "*"
+            AllowedMethods:
+            - PUT
+            AllowedOrigins:
+            - "*"
+        VersioningConfiguration:
+          Status: Suspended
+        Tags:
+        - Key: STAGE
+          Value: prod
+
+    UploadBucketDev:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.dev-bucket}
+        AccessControl: PublicRead
+        VersioningConfiguration:
+          Status: Suspended
+
+    S3CDN:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Aliases:
+          - cdn.mira.menu
+          Enabled: true
+          IPV6Enabled: true
+          PriceClass: PriceClass_200
+          HttpVersion: http2          
+          DefaultCacheBehavior:
+            TargetOriginId:
+              Fn::Join:
+                - ''
+                - - 'S3-'
+                  - Fn::GetAtt:
+                    - UploadBucket
+                    - DomainName
+            ViewerProtocolPolicy: redirect-to-https
+            MinTTL: 0
+            AllowedMethods:
+            - HEAD
+            - GET
+            - OPTIONS
+            CachedMethods:
+            - HEAD
+            - GET
+            - OPTIONS
+            ForwardedValues:
+              QueryString: false
+              Cookies:
+                Forward: none
+          Origins:
+          - DomainName: 
+              Fn::GetAtt: 
+                - UploadBucket
+                - DomainName
+            Id: 
+              Fn::Join:
+                - ''
+                - - 'S3-'
+                  - Fn::GetAtt:
+                    - UploadBucket
+                    - DomainName
+            S3OriginConfig: {}
+          Restrictions:
+            GeoRestriction:
+              RestrictionType: none
+              Locations: []
+          ViewerCertificate:
+            AcmCertificateArn: arn:aws:acm:us-east-1:780139254791:certificate/3c611926-098e-409b-be52-4399ad1a0529
+            SslSupportMethod: sni-only
+            MinimumProtocolVersion: TLSv1.1_2016
+
+    S3DNS:
+      Type: AWS::Route53::RecordSetGroup
+      Properties:
+        Comment: S3 CDN
+        HostedZoneName: mira.menu.
+        RecordSets:
+        - Name: cdn.mira.menu.
+          Type: AAAA
+          AliasTarget:
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName: 
+              Fn::GetAtt: 
+                - S3CDN
+                - DomainName
+        - Name: cdn.mira.menu.
+          Type: A
+          AliasTarget:
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName: 
+              Fn::GetAtt: 
+                - S3CDN
+                - DomainName
+
+  Outputs:
+    S3BucketSecureURL:
+      Value: 
+        Fn::Join: 
+          - ''
+          - - 'https://'
+            - Fn::GetAtt: 
+              - UploadBucket
+              - DomainName
+      Description: Name of S3 bucket to hold website content
+    CloudFrontURL:
+      Value: 
+        Fn::GetAtt:
+          - S3CDN
+          - DomainName
+
